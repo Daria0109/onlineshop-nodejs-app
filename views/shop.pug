@@ -1,0 +1,25 @@
+extends layouts/app-layouts
+
+block style
+    link(
+        rel="stylesheet"
+        href="/css/product.css"
+    )
+
+block content
+    main
+        if products.length
+            each product in products
+                div.grid
+                    article.card.product-item
+                        header.card__header
+                            h1.product__title #{product.title}
+                        div.card__image
+                            img(src="https://images.pexels.com/photos/9969158/pexels-photo-9969158.jpeg?auto=compress&cs=tinysrgb&w=1600")
+                        div.card__content
+                            h2.product__price $19.99
+                            p.product__description A very interesting book about so many even more interesting things!
+                        div.card__actions
+                            button.btn Add to Cart
+        else
+            h1 Products not found!
