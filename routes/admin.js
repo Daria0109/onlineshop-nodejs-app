@@ -6,7 +6,13 @@ export const products = [];
 
 // /admin/add-product ---> GET
 router.get('/add-product', (req, res, next) => {
-	res.render('add-product.pug', {title: 'Add product', path: '/admin/add-product'})
+	res.render('add-product.hbs', {
+		title: 'Add product',
+		path: '/admin/add-product',
+		formsCSS: true,
+		productCSS: true,
+		activeAddProduct: true
+	})
 });
 
 // /admin/add-product ---> POST
