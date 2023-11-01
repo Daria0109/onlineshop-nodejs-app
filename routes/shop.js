@@ -4,7 +4,7 @@ import { products } from './admin.js';
 const router = express.Router();
 
 router.get('/', (req, res, next) => {
-	res.render('shop.hbs', {
+	res.render('shop.ejs', {
 		title: 'Shop',
 		products,
 		path: '/',
