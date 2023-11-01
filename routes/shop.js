@@ -1,16 +1,8 @@
 import express from 'express';
-import { products } from './admin.js';
+import controllers from '../controllers/index.js';
 
 const router = express.Router();
 
-router.get('/', (req, res, next) => {
-	res.render('shop.ejs', {
-		title: 'Shop',
-		products,
-		path: '/',
-		productCSS: true,
-		activeShop: true
-	});
-});
+router.get('/', controllers.products.getProducts);
 
 export default router;

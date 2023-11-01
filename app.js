@@ -2,6 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import adminRoutes from './routes/admin.js';
 import shopRoutes from './routes/shop.js';
+import controllers from './controllers/index.js';
 
 const app = express();
 
@@ -25,12 +26,6 @@ app.use(express.static('public'));
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 
-app.use('/', (req, res) => {
-	const {url} = req;
-
-	res
-		.status(404)
-		.render('404.ejs', {title: 'Not found', path: url});
-});
+app.use('/', controllers.content.getNotFoundPage);
 
 app.listen(3000);
