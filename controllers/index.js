@@ -1,7 +1,9 @@
-import ProductsController from './products.js';
+import ShopController from './shop.js';
 import ContentController from './content.js';
+import AdminController from './admin.js';
 
 export default {
-	products: new ProductsController(),
+	shop: new ShopController(),
+	admin: new AdminController(),
 	content: new ContentController()
 }

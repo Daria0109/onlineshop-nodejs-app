@@ -4,8 +4,11 @@ import {readFile, writeFile} from 'fs';
 const filePath = path.join(process.cwd(), 'data', 'products.json');
 
 export default class ProductsModel {
-	constructor(product) {
-		this.title = product.title
+	constructor(title, imageUrl, price, description) {
+		this.title = title;
+		this.imageUrl = imageUrl;
+		this.price = price;
+		this.description = description;
 	}
 
 	static fetchAll(callback) {
