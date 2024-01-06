@@ -1,4 +1,6 @@
-import ProductsModel from '../models/products.js';
+import ProductModel from '../models/products.js';
+import UserModel from '../models/user.js';
+import User from '../models/user.js';
 
 export default class AdminController {
 	getAddProduct(req, res) {
@@ -10,15 +12,16 @@ export default class AdminController {
 	}
 
 	postAddProduct(req, res) {
-		const {title, imageUrl, price, description} = req.body;
-		const id = Math.random();
-		const products = new ProductsModel(id, title, imageUrl, price, description);
-		products.save()
-			.then(([rows, fields]) => {
-				console.log(rows)
-				res.redirect('/');
-			})
-			.catch();
+		const { title, imageUrl, price, description } = req.body;
+
+		req.user.createProduct({
+			title,
+			imageUrl,
+			price,
+			description
+		})
+			.then(() => res.redirect('/'))
+			.catch((err) => console.log(err));
 	}
 
 	getEditProducts(req, res) {
@@ -29,40 +32,59 @@ export default class AdminController {
 		}
 
 		const productId = req.params.productId;
-		ProductsModel.findById(productId, (product) => {
-			res.render('admin/edit-product', {
-				title: 'Edit product',
-				path: '/admin/edit-product',
-				editMode,
-				product
-			});
-		});
+		ProductModel
+			.findAll({where: {id: productId}})
+			.then((data) => {
+				res.render('admin/edit-product', {
+					title: 'Edit product',
+					path: '/admin/edit-product',
+					product: data[0],
+					editMode,
+				});
+			})
+			.catch((err) => console.log(err));
 	}
 
 	postEditProducts = (req, res, next) => {
 		const productId = req.params.productId;
 		const {title, imageUrl, price, description} = req.body;
-		const updatedProduct = new ProductsModel(productId, title, imageUrl, description, price);
-		updatedProduct.save();
 
-		res.redirect('/admin/products');
+		ProductModel
+			.update({
+				title,
+				price,
+				imageUrl,
+				description
+			}, {where: {id: productId}})
+			.then(() => {
+				res.redirect('/admin/products');
+			})
+			.catch((err) => console.log(err));
 	};
 
 	getProducts(req, res) {
-		ProductsModel.fetchAll(products => {
-			res.render('admin/products', {
-				products,
-				title: 'Admin Products',
-				path: '/admin/products'
-			});
-		});
+		ProductModel
+			.findAll()
+			.then((data) => {
+				res.render('admin/products', {
+					products: data,
+					title: 'Admin Products',
+					path: '/admin/products'
+				});
+			})
+			.catch((err) => console.log(err));
 	}
 
 	deleteProduct = (req, res, next) => {
 		const productId = req.body.productId;
 
-		ProductsModel.deleteById(productId);
-
-		res.redirect('/admin/products');
+		ProductModel
+			.destroy({
+				where: {id: productId}
+			})
+			.then(() => {
+				res.redirect('/admin/products');
+			})
+			.catch((err) => console.log(err));
 	};
 }
