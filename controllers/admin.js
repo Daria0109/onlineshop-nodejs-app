@@ -1,6 +1,4 @@
 import ProductModel from '../models/products.js';
-import UserModel from '../models/user.js';
-import User from '../models/user.js';
 
 export default class AdminController {
 	getAddProduct(req, res) {
@@ -12,15 +10,14 @@ export default class AdminController {
 	}
 
 	postAddProduct(req, res) {
+		console.log(req.user)
 		const { title, imageUrl, price, description } = req.body;
+		const product = new ProductModel(title, price, imageUrl, description, null, req.user._id);
 
-		req.user.createProduct({
-			title,
-			imageUrl,
-			price,
-			description
-		})
-			.then(() => res.redirect('/'))
+		product.save()
+			.then(() => {
+				res.redirect('/admin/products');
+			})
 			.catch((err) => console.log(err));
 	}
 
@@ -33,12 +30,12 @@ export default class AdminController {
 
 		const productId = req.params.productId;
 		ProductModel
-			.findAll({where: {id: productId}})
+			.fetchById(productId)
 			.then((data) => {
 				res.render('admin/edit-product', {
 					title: 'Edit product',
 					path: '/admin/edit-product',
-					product: data[0],
+					product: data,
 					editMode,
 				});
 			})
@@ -49,13 +46,9 @@ export default class AdminController {
 		const productId = req.params.productId;
 		const {title, imageUrl, price, description} = req.body;
 
-		ProductModel
-			.update({
-				title,
-				price,
-				imageUrl,
-				description
-			}, {where: {id: productId}})
+		const product = new ProductModel(title, price, imageUrl, description, productId);
+
+		product.save()
 			.then(() => {
 				res.redirect('/admin/products');
 			})
@@ -64,7 +57,7 @@ export default class AdminController {
 
 	getProducts(req, res) {
 		ProductModel
-			.findAll()
+			.fetchAll()
 			.then((data) => {
 				res.render('admin/products', {
 					products: data,
@@ -79,9 +72,7 @@ export default class AdminController {
 		const productId = req.body.productId;
 
 		ProductModel
-			.destroy({
-				where: {id: productId}
-			})
+			.deleteById(productId)
 			.then(() => {
 				res.redirect('/admin/products');
 			})

@@ -2,14 +2,9 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import adminRoutes from './routes/admin.js';
 import shopRoutes from './routes/shop.js';
+import { mongoConnect } from './util/datadase.js';
 import controllers from './controllers/index.js';
-import sequelize from './util/datadase.js';
-import ProductModel from './models/products.js';
 import UserModel from './models/user.js';
-import CartModel from './models/cart.js';
-import CartItemModel from './models/cart-item.js';
-import OrderModel from './models/order.js';
-import OrderItemModel from './models/order-item.js';
 
 const app = express();
 
@@ -27,11 +22,24 @@ const app = express();
 
 app.set('view engine', 'ejs');
 
+const mongoUserID = '65b8acf00d24df5024e531a8';
+
 app.use((req, res, next) => {
+	// GET USER WITH SEQUELIZE
+	// UserModel
+	// 	.findAll({where: {id: 1}})
+	// 	.then((user) => {
+	// 		req.user = user[0];
+	// 		next();
+	// 	})
+	// 	.catch((err) => console.log(err));
+
+	// GET USER WITH MONGODB
 	UserModel
-		.findAll({where: {id: 1}})
+		.findById(mongoUserID)
 		.then((user) => {
-			req.user = user[0];
+			const {_id, username, email, cart} = user;
+			req.user = new UserModel(username, email, cart, _id);
 			next();
 		})
 		.catch((err) => console.log(err));
@@ -45,31 +53,37 @@ app.use(shopRoutes);
 
 app.use('/', controllers.content.getNotFoundPage);
 
-ProductModel.belongsTo(UserModel, {constraints: true, onDelete: 'CASCADE'});
-UserModel.hasMany(ProductModel);
-UserModel.hasOne(CartModel);
-CartModel.belongsTo(UserModel);
-ProductModel.belongsToMany(CartModel, {through: CartItemModel});
-CartModel.belongsToMany(ProductModel, {through: CartItemModel});
-OrderModel.belongsTo(UserModel);
-UserModel.hasMany(OrderModel);
-ProductModel.belongsToMany(OrderModel, {through: OrderItemModel});
-OrderModel.belongsToMany(ProductModel, {through: OrderItemModel})
+mongoConnect(() => {
+	app.listen(3000);
+});
 
+// CONNECTION TO MYSQL DB
 
-sequelize
-	.sync({alter: true})
-	.then(() => {
-		return UserModel.findOrCreate({
-			where: {id: 1},
-			defaults: {name: 'Max', email: 'test@test.com'}
-		})
-	})
-	.then((user) => {
-		return user[0].createCart();
-	})
-	.then(() => {
-		app.listen(3000);
-	})
-	.catch((err) => console.log(err));
+// ProductModel.belongsTo(UserModel, {constraints: true, onDelete: 'CASCADE'});
+// UserModel.hasMany(ProductModel);
+// UserModel.hasOne(CartModel);
+// CartModel.belongsTo(UserModel);
+// ProductModel.belongsToMany(CartModel, {through: CartItemModel});
+// CartModel.belongsToMany(ProductModel, {through: CartItemModel});
+// OrderModel.belongsTo(UserModel);
+// UserModel.hasMany(OrderModel);
+// ProductModel.belongsToMany(OrderModel, {through: OrderItemModel});
+// OrderModel.belongsToMany(ProductModel, {through: OrderItemModel})
+//
+//
+// sequelize
+// 	.sync({alter: true})
+// 	.then(() => {
+// 		return UserModel.findOrCreate({
+// 			where: {id: 1},
+// 			defaults: {name: 'Max', email: 'test@test.com'}
+// 		})
+// 	})
+// 	.then((user) => {
+// 		return user[0].createCart();
+// 	})
+// 	.then(() => {
+// 		app.listen(3000);
+// 	})
+// 	.catch((err) => console.log(err));
 
