@@ -10,9 +10,10 @@ export default class AdminController {
 	}
 
 	postAddProduct(req, res) {
-		console.log(req.user)
 		const { title, imageUrl, price, description } = req.body;
-		const product = new ProductModel(title, price, imageUrl, description, null, req.user._id);
+		const product = new ProductModel({
+			title, price, imageUrl, description, userId: req.user
+		});
 
 		product.save()
 			.then(() => {
@@ -30,7 +31,7 @@ export default class AdminController {
 
 		const productId = req.params.productId;
 		ProductModel
-			.fetchById(productId)
+			.findById(productId)
 			.then((data) => {
 				res.render('admin/edit-product', {
 					title: 'Edit product',
@@ -46,9 +47,15 @@ export default class AdminController {
 		const productId = req.params.productId;
 		const {title, imageUrl, price, description} = req.body;
 
-		const product = new ProductModel(title, price, imageUrl, description, productId);
+		ProductModel.findById(productId)
+			.then((product) => {
+				product.title = title;
+				product.imageUrl = imageUrl;
+				product.price = price;
+				product.description = description;
 
-		product.save()
+				product.save()
+			})
 			.then(() => {
 				res.redirect('/admin/products');
 			})
@@ -57,7 +64,7 @@ export default class AdminController {
 
 	getProducts(req, res) {
 		ProductModel
-			.fetchAll()
+			.find()
 			.then((data) => {
 				res.render('admin/products', {
 					products: data,
@@ -65,14 +72,14 @@ export default class AdminController {
 					path: '/admin/products'
 				});
 			})
-			.catch((err) => console.log(err));
+			.catch((err) => console.log(err)); f
 	}
 
 	deleteProduct = (req, res, next) => {
 		const productId = req.body.productId;
 
 		ProductModel
-			.deleteById(productId)
+			.findByIdAndDelete(productId)
 			.then(() => {
 				res.redirect('/admin/products');
 			})

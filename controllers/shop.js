@@ -1,8 +1,9 @@
 import ProductModel from '../models/products.js';
+import OrderModel from '../models/order.js';
 
 export default class ShopController {
 	getIndex(req, res) {
-		ProductModel.fetchAll()
+		ProductModel.find()
 			.then((products) => res.render('shop/index', {
 				products,
 				title: 'Shop',
@@ -12,19 +13,25 @@ export default class ShopController {
 	}
 
 	getProducts(req, res) {
-		ProductModel.fetchAll()
-			.then((products) => res.render('shop/index', {
-				products,
-				title: 'Shop',
-				path: '/'
-			}))
+		ProductModel.find()
+			// for info
+			// .select('title imageUrl -_id')
+			// .populate('userId')
+			.then((products) => {
+				console.log(products)
+				res.render('shop/index', {
+					products,
+					title: 'Shop',
+					path: '/'
+				});
+			})
 			.catch((err) => console.log(err));
 	}
 
 	getProduct(req, res) {
 		const productId = req.params.productId;
 
-		ProductModel.fetchOne(productId)
+		ProductModel.findById(productId)
 			.then((data) => {
 				res.render('shop/product-detail', {
 					product: data,
@@ -36,12 +43,13 @@ export default class ShopController {
 	}
 
 	getCart(req, res) {
-		req.user.getCart()
+		req.user
+			.populate('cart.items.productId')
 			.then((data) => {
 				return res.render('shop/cart', {
 					path: '/cart',
 					title: 'Your Cart',
-					products: data
+					products: data.cart.items
 				});
 			})
 			.catch((err) => console.log(err));
@@ -50,9 +58,9 @@ export default class ShopController {
 	postCart(req, res) {
 		const prodId = req.body.productId;
 
-		ProductModel.fetchById(prodId)
+		ProductModel.findById(prodId)
 			.then((data) => {
-				return req.user.addToCart(data._id);
+				return req.user.addToCart(data);
 			})
 			.then(() => res.redirect('/cart'))
 			.catch((err) => console.log(err));
@@ -67,13 +75,33 @@ export default class ShopController {
 	};
 
 	postOrder = (req, res, next) => {
-		req.user.addOrder()
+		req.user
+			.populate('cart.items.productId')
+			.then((data) => {
+				const products = data.cart.items.map((item) => {
+					return {
+						product: { ...item.productId._doc },
+						quantity: item.quantity
+					}
+				})
+
+				const order = new OrderModel({
+					products,
+					user: {
+						name: req.user.username,
+						userId: req.user
+					}
+				});
+
+				return order.save();
+			})
+			.then(() => req.user.clearCart())
 			.then(() => res.redirect('/orders'))
 			.catch((err) => console.log(err));
 	}
 
 	getOrders = (req, res, next) => {
-		return req.user.getOrders()
+		OrderModel.find({ 'user.userId': req.user._id })
 			.then((orders) => {
 				res.render('shop/orders', {
 					path: '/orders',

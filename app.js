@@ -2,9 +2,10 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import adminRoutes from './routes/admin.js';
 import shopRoutes from './routes/shop.js';
-import { mongoConnect } from './util/datadase.js';
+import { connectDBUri } from './util/datadase.js';
 import controllers from './controllers/index.js';
 import UserModel from './models/user.js';
+import mongoose from 'mongoose';
 
 const app = express();
 
@@ -35,11 +36,20 @@ app.use((req, res, next) => {
 	// 	.catch((err) => console.log(err));
 
 	// GET USER WITH MONGODB
-	UserModel
-		.findById(mongoUserID)
+	// UserModel
+	// 	.findById(mongoUserID)
+	// 	.then((user) => {
+	// 		const {_id, username, email, cart} = user;
+	// 		req.user = new UserModel(username, email, cart, _id);
+	// 		next();
+	// 	})
+	// 	.catch((err) => console.log(err));
+
+	// GET USER WITH MONGOOSE
+
+	UserModel.findById('65df70868bb42b405dbd6ee0')
 		.then((user) => {
-			const {_id, username, email, cart} = user;
-			req.user = new UserModel(username, email, cart, _id);
+			req.user = user;
 			next();
 		})
 		.catch((err) => console.log(err));
@@ -53,9 +63,26 @@ app.use(shopRoutes);
 
 app.use('/', controllers.content.getNotFoundPage);
 
-mongoConnect(() => {
-	app.listen(3000);
-});
+mongoose.connect(connectDBUri)
+	.then(() => {
+		return UserModel.findOne();
+	})
+	.then((data) => {
+		if (!data) {
+			const user = new UserModel({
+				username: 'Max',
+				email: 'test@test.com',
+				cart: {
+					items: []
+				}
+			});
+			user.save();
+		}
+
+		app.listen(3000);
+		console.log('Connected MongoDB');
+	})
+	.catch((err) => console.log(err));
 
 // CONNECTION TO MYSQL DB
 

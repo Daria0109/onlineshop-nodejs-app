@@ -1,7 +1,9 @@
+// !!! THIS IS NOT USED ANY MORE FOR CONNECTION TO MONGODB
+
 import mongodb from 'mongodb';
 
 const MongoClient = mongodb.MongoClient;
-const uri = "mongodb+srv://Darya:xCO0xLeNEKN70sLu@cluster1.w5hzgse.mongodb.net/?retryWrites=true&w=majority";
+export const connectDBUri = "mongodb+srv://Darya:xCO0xLeNEKN70sLu@cluster1.w5hzgse.mongodb.net/shop?retryWrites=true&w=majority";
 
 let _db;
 

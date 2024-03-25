@@ -1,112 +1,54 @@
-import { getDB } from '../util/datadase.js';
-import { ObjectId } from 'mongodb';
+import { model, Schema } from 'mongoose';
 
-const collectionName = 'users';
+const UserSchema = new Schema({
+	username: {
+		type: String,
+		required: true
+	},
+	email: {
+		type: String,
+		required: true
+	},
+	cart: {
+		items: [{
+			productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+			quantity: { type: Number, required: true }
+		}]
+	}
+});
 
-class UserModel {
-	constructor(username, email, cart, id) {
-		this.username = username;
-		this.email = email;
-		this.cart = cart;
-		this._id = id;
+UserSchema.methods.addToCart = function (productToAdd) {
+	const existedProductIndex = this.cart ? this.cart.items.findIndex((product) => product.productId.toString() === productToAdd._id.toString()) : -1;
+	let newQuantity = 1;
+	const newCartItems = this.cart ? [...this.cart.items] : [];
+
+	if (existedProductIndex >= 0) {
+		newQuantity = newCartItems[existedProductIndex].quantity + 1;
+		newCartItems[existedProductIndex].quantity = newQuantity;
+	} else {
+		newCartItems.push({
+			productId: productToAdd._id,
+			quantity: newQuantity
+		});
 	}
 
-	save() {
-		return getDB().collection(collectionName)
-			.insertOne(this)
-			.then((data) => console.log(data))
-			.catch((err) => console.log(err));
-	}
+	this.cart = { items: newCartItems };
 
-	addToCart(productId) {
-		const existedProductIndex = this.cart ? this.cart.items.findIndex((product) => product.productId.toString() === productId.toString()) : -1;
-		let newQuantity = 1;
-		const newCartItems = this.cart ? [...this.cart.items] : [];
+	return this.save();
+};
 
+UserSchema.methods.deleteCartItem = function (productId) {
+	this.cart.items = this.cart.items.filter((item) => item.productId.toString() !== productId.toString());
 
-		if (existedProductIndex >= 0) {
-			newQuantity = newCartItems[existedProductIndex].quantity + 1;
-			newCartItems[existedProductIndex].quantity = newQuantity;
-		} else {
-			newCartItems.push({
-				productId: new ObjectId(productId),
-				quantity: newQuantity
-			})
-		}
+	return this.save();
+};
 
-		const updatedCart = { items: newCartItems };
+UserSchema.methods.clearCart = function () {
+	this.cart = {items: []};
 
-		return getDB().collection(collectionName)
-			.updateOne({_id: new ObjectId(this._id)}, {$set: { cart: updatedCart }})
-			.then((data) => console.log(data))
-			.catch((err) => console.log(err));
-	}
+	return this.save();
+};
 
-	getCart() {
-		if (!this.cart || !this.cart.items.length) {
-			return Promise.resolve([]);
-		}
-
-		const productsIds = this.cart.items.map((item) => item.productId);
-
-		return getDB().collection('products')
-			.find({_id : {$in: productsIds}})
-			.toArray()
-			.then((data) => {
-				return data.map((product) => {
-					const quantity = this.cart.items.find((item) => {
-						return item.productId.toString() === product._id.toString()
-					}).quantity;
-					return {...product, quantity};
-				})
-			})
-			.catch((err) => console.log(err));
-	}
-
-	deleteCartItem(productId) {
-		const filteredCartItems = this.cart.items.filter((item) => item.productId.toString()  !== productId.toString());
-
-		return getDB().collection(collectionName)
-			.updateOne({_id: new ObjectId(this._id)}, {$set: {cart: {items: filteredCartItems}}})
-			.then(() => console.log(`${productId} deleted!`))
-			.catch((err) => console.log(err));
-	}
-
-	getOrders() {
-		return getDB().collection('orders')
-			.find({'user._id': new ObjectId(this._id)})
-			.toArray()
-			.then((data) => data)
-			.catch((err) => console.log(err));
-	}
-
-	addOrder() {
-		return this.getCart()
-			.then((data) => {
-				const order =  {
-						items: data,
-						user: {
-							_id: new ObjectId(this._id),
-							name: this.username
-						}
-					};
-				return getDB().collection('orders').insertOne(order);
-			})
-			.then(() => {
-				return getDB().collection(collectionName)
-					.updateOne({_id: new ObjectId(this._id)}, {$set: {cart: {items: []}}})
-			})
-			.then(() => console.log('Moved cart to orders'))
-			.catch((err) => console.log(err));
-	}
-
-	static findById(id) {
-		return getDB().collection(collectionName)
-			.findOne({_id: new ObjectId(id)})
-			.then((data) => data)
-			.catch((err) => console.log(err));
-	}
-
-}
+const UserModel = model('User', UserSchema);
 
 export default UserModel;
